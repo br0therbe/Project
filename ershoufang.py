@@ -1,3 +1,4 @@
+# 链接、房屋id、图片、标题、房屋信息、位置、关注信息、标签、总价、单价
 from gevent import monkey; monkey.patch_all()
 from fake_useragent import UserAgent
 from gevent.queue import Queue
