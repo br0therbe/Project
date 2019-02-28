@@ -3,7 +3,6 @@ from gevent.queue import Queue
 from jddetailpage import JDDetailPage
 from time import time
 import gevent
-import json
 
 
 class XieCheng(object):
