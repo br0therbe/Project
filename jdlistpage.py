@@ -1,3 +1,5 @@
+# 列表页：
+# 链接、价格、品牌、描述、评价人数、店铺、图片链接
 from fake_useragent import UserAgent
 from lxml import html
 from time import time

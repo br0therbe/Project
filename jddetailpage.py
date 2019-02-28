@@ -1,3 +1,6 @@
+# 详情页：
+# 图片、价格、品牌、描述、增值服务、店铺、重量、颜色、增值保障、京东服务、白条分期、
+# 温馨提示、商品介绍、规格与包装、售后服务、评论数、好评率
 from gevent import monkey; monkey.patch_all()
 from fake_useragent import UserAgent
 from gevent.queue import Queue
