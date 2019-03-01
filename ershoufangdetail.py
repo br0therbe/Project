@@ -190,14 +190,11 @@ if __name__ == '__main__':
     # 使用协程，详情页902页902条数据，483.756032705307s左右
     # 使用协程，详情页1371页1371条数据，889.4946854114532s左右
     # 使用协程，详情页1625页1625条数据，95.85135197639465s左右
-    # 使用协程，列表页100页3000条数据，15s左右
+    # 使用协程，详情页2996页2996条数据，383s左右
     with open('ershoufang.txt', 'r', encoding='utf8') as fp:
         txt = json.loads(fp.read())
-    # link = [i['house_id'] for i in txt][32:]
-    link = [i['house_id'] for i in txt][2279:]
-    link.extend(['105101200107', '105101579200', '105101484584'])
+    link = set([i['house_id'] for i in txt])
     start_time = time()
-    # link = ['105101042484']
     esf = ErShouFangDetail(link)
     esf.run(100)
 
