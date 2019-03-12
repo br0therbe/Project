@@ -91,8 +91,8 @@ def log_response(content_type):
                         response = result.json()
                     else:
                         response = result.text
-                        logger.info('{}: {}'.format(content_type, response))
-                        break
+                    logger.info('{}: {}'.format(content_type, response))
+                    break
             else:
                 logger.warning('{}内容获取失败！'.format(content_type))
                 logger.error(', '.join(error_msg))
