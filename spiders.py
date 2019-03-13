@@ -11,6 +11,7 @@ from functools import wraps
 from queue import Queue
 from time import time
 import logging
+import types
 import os
 
 
@@ -26,12 +27,12 @@ class Spiders(object):
             fmt='%(levelname)s:: %(asctime)s; File {filename}; %(message)s '.format(filename=filename),
             datefmt="%m/%d/%Y %H:%M:%S"))
 
-        error = logging.FileHandler('error.log')
+        error = logging.FileHandler('error.log', encoding='utf-8')
         error.setLevel(logging.ERROR)
         error.setFormatter(logging.Formatter(
             fmt='%(levelname)s:: %(asctime)s; File {filename}; %(message)s '.format(filename=filename),
             datefmt="%m/%d/%Y %H:%M:%S"))
-        total = logging.FileHandler('all.log')
+        total = logging.FileHandler('all.log', encoding='utf-8')
         total.setLevel(logging.DEBUG)
         total.setFormatter(logging.Formatter(
             fmt='%(levelname)s:: %(asctime)s; File {filename}; %(message)s '.format(filename=filename),
@@ -41,12 +42,18 @@ class Spiders(object):
         logger.addHandler(error)
         logger.addHandler(total)
         self.queue = self.list_to_queue(urls)
+        self.value = []
 
     def response(self):
         pass
 
     def parse(self):
         pass
+
+    def set_url(self):
+        result = self.queue.get_nowait()
+        logger.info('url: {}'.format(result))
+        return result
 
     @staticmethod
     def set_headers(**kwargs):
@@ -67,13 +74,23 @@ class Spiders(object):
         return queue
 
 
-def log_response(content_type):
-    if content_type not in ['content', 'json', 'text']:
-        raise ValueError("Invalid content_type! content_type must be 'content' or 'json' or 'text'")
+def log_func(func):
+    @wraps(func)
+    def inner(*args, **kwargs):
+        logger.debug('in {} is running'.format(func.__name__))
+        result = func(*args, **kwargs)
+        if result:
+            logger.info('result: {}'.format(result))
+        logger.debug('in {} is ending!'.format(func.__name__))
+        return result
+    return inner
+
+
+def log_response(binding=None):
     def outer(func):
         @wraps(func)
         def inner(*args, **kwargs):
-            response = ''
+            result = ''
             count = 0
             error_msg = []
             while count < 3:
@@ -85,18 +102,14 @@ def log_response(content_type):
                     error_msg.append('line {}; reason {}'.format(lineno, message))
                     count += 1
                 else:
-                    if content_type == 'content':
-                        response = result.content
-                    elif content_type == 'json':
-                        response = result.json()
-                    else:
-                        response = result.text
-                    logger.info('{}: {}'.format(content_type, response))
+                    if isinstance(binding, types.MethodType):
+                        result = binding(result)
+                    logger.debug('response: {}'.format(result))
                     break
             else:
-                logger.warning('{}内容获取失败！'.format(content_type))
+                logger.warning('内容获取失败！')
                 logger.error(', '.join(error_msg))
-            return response
+            return result
         return inner
     return outer
 
@@ -112,13 +125,13 @@ def log_parse(func):
     return inner
 
 
-def log_url(func):
-    @wraps(func)
-    def inner(*args, **kwargs):
-        result = func(*args, **kwargs)
-        logger.info('url: {}'.format(result))
-        return result
-    return inner
+# def log_url(func):
+#     @wraps(func)
+#     def inner(*args, **kwargs):
+#         result = func(*args, **kwargs)
+#         logger.info('url: {}'.format(result))
+#         return result
+#     return inner
 
 
 def log_params(func):
@@ -135,15 +148,5 @@ def log_cookies(func):
     def inner(*args, **kwargs):
         result = func(*args, **kwargs)
         logger.info('cookies: {}'.format(result))
-        return result
-    return inner
-
-
-def log_func(func):
-    @wraps(func)
-    def inner(*args, **kwargs):
-        logger.debug('in {} is running'.format(func.__name__))
-        result = func(*args, **kwargs)
-        logger.debug('in {} is ending!'.format(func.__name__))
         return result
     return inner
