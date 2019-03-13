@@ -124,16 +124,6 @@ def log_parse(func):
         return result
     return inner
 
-
-# def log_url(func):
-#     @wraps(func)
-#     def inner(*args, **kwargs):
-#         result = func(*args, **kwargs)
-#         logger.info('url: {}'.format(result))
-#         return result
-#     return inner
-
-
 def log_params(func):
     @wraps(func)
     def inner(*args, **kwargs):
