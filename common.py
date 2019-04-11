@@ -1,20 +1,14 @@
+# -*- coding: utf-8 -*-
+# @Author  : ljq
+# @File    : common.py
+# @Time    : 2019/4/10 10:01
+# @Version : Python 3.6.8
 # coding: utf-8
-"""
-@File    : _common
-@Time    : 2019/3/30 23:52
-@Author  : Big Belly
-@Software: PyCharm
-@Version : Python 3.7.1
-"""
 from hashlib import md5
 from functools import wraps
-from PIL import Image
 from queue import Queue
 from time import time
-
 import base64
-import os
-# import pytesseract
 
 
 def base64_encode(_byte):
@@ -38,11 +32,13 @@ def cost(func):
 
     return inner
 
+
 def format_headers(_str, split='\n'):
     _dict = dict()
-    for item in _str.split(split):
-        key, value = item.split(': ')
-        _dict[key] = value
+    _list = list(map(lambda x: x.strip(), filter(lambda x: x, _str.split(split))))
+    for item in _list:
+        key, value = item.split(':', 1)
+        _dict[key.strip()] = value
     return _dict
 
 
@@ -66,3 +62,6 @@ def list_to_queue(urls):
 #             Image.open(os.path.join(path, file)))
 #         print('{} is {}'.format(file, text))
 #         # return file, text
+
+if __name__ == '__main__':
+    pass
