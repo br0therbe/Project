@@ -38,7 +38,7 @@ def format_headers(_str, split='\n'):
     _list = list(map(lambda x: x.strip(), filter(lambda x: x, _str.split(split))))
     for item in _list:
         key, value = item.split(':', 1)
-        _dict[key.strip()] = value
+        _dict[key.strip()] = value.strip()
     return _dict
 
 
