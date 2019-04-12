@@ -34,11 +34,14 @@ def cost(func):
 
 
 def format_headers(_str, split='\n'):
+    _str = _str.replace("''", '').replace('""', '')
     _dict = dict()
     _list = list(map(lambda x: x.strip(), filter(lambda x: x, _str.split(split))))
     for item in _list:
-        key, value = item.split(':', 1)
-        _dict[key.strip()] = value.strip()
+        if item:
+            key, value = item.strip(',').split(':', 1)
+
+            _dict[key.strip()] = str(value).strip()
     return _dict
 
 
