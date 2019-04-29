@@ -9,7 +9,7 @@ from functools import wraps
 from queue import Queue
 from time import time
 import base64
-
+import requests
 
 def base64_encode(_byte):
     _byte = bytes(_byte, encoding='utf-8')
@@ -58,6 +58,36 @@ def list_to_queue(urls):
     return queue
 
 
+def connect_retry(method: str, url: str, headers: dict, data: dict = None, params: dict = None, allow_redirects=True, timeout=7, retry=5, proxies=None):
+    connect_num = 1
+    resp = None
+    if proxies == False:
+        proxies = my_proxy.get_auto_proxy()
+    while connect_num <= retry:
+        try:
+            resp = requests.request(method, url, headers=headers, proxies=proxies, timeout=timeout, data=data, params=params, allow_redirects=allow_redirects)
+            break
+        except requests.exceptions.ConnectTimeout:
+            __message = f'{url}, 连接超时, 第{connect_num}次重试'
+            logger.fatal(__message)
+            connect_num += 1
+        except requests.exceptions.ProxyError:
+            __message = f'{url}, 代理获取失败, 第{connect_num}次重试'
+            logger.fatal(__message)
+            connect_num += 1
+    logger.debug(f'resp: {resp}')
+    if not resp:
+        __message = f'url: {url}, 请求失败, 原因：服务器拒绝返回数据'
+        logger.fatal(__message)
+        raise requests.ConnectionError(__message)
+
+    status_code = resp.status_code
+    if status_code != 200:
+        __message = f'url: {url}, 请求失败，原因：status_code={status_code}'
+        logger.fatal(__message)
+        raise requests.HTTPError(__message)
+
+    return resp
 # def tesseract_recognize(path):
 #     # tesseract = 'C:\Program Files (x86)\Tesseract-OCR\tesseract.exe'
 #     for file in os.listdir(path):
