@@ -60,7 +60,7 @@ def list_to_queue(urls):
 def __connect_retry(self, method: str, url: str, headers: dict, data: dict = None, params: dict = None, allow_redirects=True, timeout=7, retry=5, proxies=False):
     connect_num = 1
     resp = None
-    if proxies == None:
+    if proxies is None:
         proxies = my_proxy.get_auto_proxy()
     while connect_num <= retry:
         try:
