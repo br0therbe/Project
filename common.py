@@ -57,14 +57,14 @@ def list_to_queue(urls):
         queue.put_nowait(url)
     return queue
 
-def __connect_retry(self, method: str, url: str, headers: dict, data: dict = None, params: dict = None, allow_redirects=True, timeout=7, retry=5, proxies=False):
+def __connect_retry(self, method: str, url: str, headers: dict, data: dict = None, params: dict = None, allow_redirects=True, timeout=7, retry=5, proxies=False, verify=None):
     connect_num = 1
     resp = None
     if proxies is None:
         proxies = my_proxy.get_auto_proxy()
     while connect_num <= retry:
         try:
-            resp = requests.request(method, url, headers=headers, proxies=proxies, timeout=timeout, data=data, params=params, allow_redirects=allow_redirects)
+            resp = requests.request(method, url, headers=headers, proxies=proxies, timeout=timeout, data=data, params=params, allow_redirects=allow_redirects, verify=verify)
             break
         except requests.exceptions.ConnectTimeout:
             __message = f'{url}, 连接超时, 第{connect_num}次重试'
@@ -87,6 +87,42 @@ def __connect_retry(self, method: str, url: str, headers: dict, data: dict = Non
         raise requests.HTTPError(__message)
 
     return resp
+
+class KeepSession(LoggerMixin):
+    def __init__(self, allow_redirects=True, verify=None):
+        self.__allow_redirects = allow_redirects
+        self.__verify = verify
+        self.session = requests.session()
+
+    def request(self, method: str, url: str, headers: dict, data: dict = None, params: dict = None, timeout=5, retry=3, proxies=None):
+        connect_num = 1
+        resp = None
+        while connect_num <= retry:
+            try:
+                resp = self.session.request(method, url, headers=headers, proxies=proxies, timeout=timeout, data=data, params=params, allow_redirects=self.__allow_redirects, verify=self.__verify)
+                break
+            except requests.exceptions.ConnectTimeout:
+                __message = f'{url}, 连接超时, 第{connect_num}次重试'
+                self.logger.fatal(__message)
+                connect_num += 1
+            except requests.exceptions.ProxyError:
+                __message = f'{url}, 代理获取失败, 第{connect_num}次重试'
+                self.logger.fatal(__message)
+                connect_num += 1
+        self.logger.debug(f'resp: {resp}')
+
+        if not resp:
+            __message = f'url: {url}, 请求失败, 原因：服务器拒绝返回数据'
+            self.logger.fatal(__message)
+            raise requests.ConnectionError(__message)
+
+        status_code = resp.status_code
+        if status_code != 200:
+            __message = f'url: {url}, 请求失败，原因：status_code={status_code}'
+            self.logger.fatal(__message)
+            raise requests.HTTPError(__message)
+
+        return resp
 # def tesseract_recognize(path):
 #     # tesseract = 'C:\Program Files (x86)\Tesseract-OCR\tesseract.exe'
 #     for file in os.listdir(path):
