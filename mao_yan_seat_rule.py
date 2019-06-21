@@ -25,7 +25,6 @@ def seat_rule(point_list: list):
                     status_list.append(NO_BOOK_STATUS)
             status_str = ''.join([str(point) for point in status_list])
             print(status_str, end='     ')
-            
             # 座位规则
             # 判断是否符合第一条规则
             if f'{BOOK_STATUS}{NO_BOOK_STATUS}{BOOK_STATUS}' in status_str:
@@ -35,9 +34,9 @@ def seat_rule(point_list: list):
                 # 判断是否符合第二条规则
                 for non_booked_point in status_str.split(f'{BOOKED_STATUS}'):
                     if non_booked_point and f'{BOOK_STATUS}' in non_booked_point:
-                        booked_point_list = non_booked_point.split(f'{BOOK_STATUS}')
-                        if len(booked_point_list[0]) == 1 and len(booked_point_list[-1]) != 0 or len(booked_point_list[-1]) == 1 and len(booked_point_list[0]) != 0:
-                            print(booked_point_list)
+                        no_book_point_list = non_booked_point.split(f'{BOOK_STATUS}')
+                        if f'{NO_BOOK_STATUS}' in no_book_point_list and non_booked_point.count(f'{NO_BOOK_STATUS}') > 1:
+                            print(no_book_point_list)
                             print('ERROR MESSAGE: 01 or 10')
                             return False
             print(True)
@@ -59,3 +58,4 @@ def create_three_dimensional_matrix():
 if __name__ == '__main__':
     for _ in range(10):
         print(seat_rule(create_three_dimensional_matrix()))
+        print()
