@@ -1,6 +1,7 @@
 const BOOKED_STATUS = 2;
 const BOOK_STATUS = 1;
 const NO_BOOK_STATUS = 0;
+
 // point_array： 二维数组
 function seat_rule(point_array) {
     for (i = 0; i < point_array.length; i++) {
@@ -17,7 +18,7 @@ function seat_rule(point_array) {
                 row_booked_list.push(row_point[1]);
             }
         }
-        if (row_book_list) {
+        if (row_book_list.length > 0) {
             for (index = 0; index < row_length; index++) {
                 if (row_book_list.includes(index)) {
                     status_list.push(BOOK_STATUS);
@@ -41,9 +42,9 @@ function seat_rule(point_array) {
                 for (index = 0; index < non_booked_point_list.length; index++) {
                     var non_booked_point = non_booked_point_list[index];
                     if (non_booked_point && non_booked_point.includes(BOOK_STATUS.toString())) {
-                        var booked_point_list = non_booked_point.split(BOOK_STATUS.toString());
-                        console.log(111, booked_point_list);
-                        if (booked_point_list[0].length == 1 && booked_point_list[booked_point_list.length - 1].length != 0 || booked_point_list[booked_point_list.length - 1].length == 1 && booked_point_list[0].length != 0) {
+                        var no_book_point_list = non_booked_point.split(BOOK_STATUS.toString());
+                        if (no_book_point_list.includes(NO_BOOK_STATUS.toString()) && non_booked_point.split(NO_BOOK_STATUS.toString()).length > 2) {
+                            // console.log(print(no_book_point_list));
                             console.log('ERROR MESSAGE: 01 or 10');
                             return false
                         }
@@ -60,7 +61,7 @@ function create_three_dimensional_matrix() {
     var point_array = [];
     for (x = 0; x < 10; x++) {
         var row_point_list = [];
-        var random_array = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 1, 1];
+        var random_array = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1];
         for (y = 0; y < 8; y++) {
             z = random_array[Math.floor((Math.random() * random_array.length))];
             row_point_list.push([x, y, z]);
@@ -71,7 +72,9 @@ function create_three_dimensional_matrix() {
     return point_array
 }
 
-var a = create_three_dimensional_matrix();
-console.log(a);
-var b = seat_rule(a);
-console.log(b);
+for (index = 0; index < 10; index++) {
+    var point_array = create_three_dimensional_matrix();
+    // console.log(a);
+    seat_rule(point_array);
+    console.log();
+}
