@@ -62,9 +62,42 @@ HB_DICT = {
 }
 
 
+# def __hash_alg(a, b, c):
+#     """
+#     12306哈希算法(2019-09-23版)
+#     """
+#     hb = HB_DICT
+#     # a = sorted(a, key=lambda x: list(x.keys())[0])
+#     for key, value in a.items():
+#         e = key.replace('%', '')
+#         if isinstance(value, str):
+#             f = value.replace('%', '')
+#         elif isinstance(value, (int, float)):
+#             f = str(value)
+#         elif isinstance(value, list):
+#             f = ','.join(value)
+#         else:
+#             f = value
+#         if f != '':
+#             c += e + f
+#             if e in hb:
+#                 b += '\x26' + hb[e] + '\x3d' + f
+#             else:
+#                 b += '\x26' + e + '\x3d' + f
+#     a = c
+#     c = a.__len__()
+#     if a.__len__() % 2 is 0:
+#         d = a[c // 2: c] + a[0: c // 2]
+#     else:
+#         d = a[c // 2 + 1: c] + a[c // 2] + a[0: c // 2]
+#     a = b64encode(sha256(d.encode()).digest(), b'-_').decode().replace('=', '')
+#     c = a[::-1]
+#     c = b64encode(sha256(c.encode()).digest(), b'-_').decode().replace('=', '')
+#     return b, c
+
 def __hash_alg(a, b, c):
     """
-    12306哈希算法
+    12306哈希算法(2019-09-24版)
     """
     hb = HB_DICT
     # a = sorted(a, key=lambda x: list(x.keys())[0])
@@ -84,14 +117,36 @@ def __hash_alg(a, b, c):
                 b += '\x26' + hb[e] + '\x3d' + f
             else:
                 b += '\x26' + e + '\x3d' + f
-    a = c
+    d = c
+    e = d.__len__()
+    if e % 3 is 0:
+        f = e // 3
+    else:
+        f = e // 3 + 1
+    if 3 > e:
+        a = d
+    else:
+        a = d[0: f]
+        c = d[f: 2 * f]
+        d = d[2 * f: e]
+        a = c + d + a
     c = a.__len__()
     if a.__len__() % 2 is 0:
         d = a[c // 2: c] + a[0: c // 2]
     else:
         d = a[c // 2 + 1: c] + a[c // 2] + a[0: c // 2]
-    a = b64encode(sha256(d.encode()).digest(), b'-_').decode().replace('=', '')
+    a = d
+    c = a.__len__()
+    if c % 3 is 0:
+        d = c // 3
+    else:
+        d = c // 3 + 1
+    if 3 <= c:
+        e = a[:d]
+        f = a[d:2 * d]
+        a = a[2 * d:c] + e + f
     c = a[::-1]
+    c = b64encode(sha256(c.encode()).digest(), b'-_').decode().replace('=', '')
     c = b64encode(sha256(c.encode()).digest(), b'-_').decode().replace('=', '')
     return b, c
 
