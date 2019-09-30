@@ -2,10 +2,8 @@
 # @Author      : LJQ
 # @Time        : 2019-09-23 11:46
 # @Version     : Python 3.6.8
-# @Description :
+# @Description : 作为参考,不再维护
 import copy
-import json
-import random
 import re
 from _sha256 import sha256
 from base64 import b64encode
