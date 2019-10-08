@@ -347,6 +347,12 @@ class DeviceApi(object):
         # 截取函数名所对应的代码，拼接在hashAlg函数后，形成完整的hashAlg函数块
         for function_name in function_name_list:
             function_str = re.search(f'(function {function_name}' + r'.*?return.*?})', js_text, re.S).group(1)
+            # 找出函数中的sha256加密的代码
+            _find_sha256_list = re.findall(r'return ([a-zA-Z]*?.SHA256\((.*?)\).*?)}', function_str)
+            if _find_sha256_list:
+                # 将js中sha256加密部分用本地sha256（此代码为js非本地python）替换
+                for _find_sha256 in _find_sha256_list:
+                    function_str = function_str.replace(_find_sha256[0], f'sha256_digest({_find_sha256[1]})')
             hash_alg_text = f"{hash_alg_text}\n{function_str}"
 
         # 构建可运行的12306加密js代码
