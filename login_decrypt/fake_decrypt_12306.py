@@ -319,7 +319,7 @@ class DeviceApi(object):
         :return:
         """
         # 截取 hashAlg 函数
-        _hash_alg_str = re.search(r'hashAlg:function(.*?return new.*?}),', js_text, re.S).group(1)
+        _hash_alg_str = re.search(r'hashAlg:function(.*?return new.*?})', js_text, re.S).group(1)
         # 找出复杂的js部分代码，并替换掉，复杂部分是固定的，使用优雅的python代码运行
         _complex_part = re.search(r'\(.*?\){(.*?\)})', _hash_alg_str, re.S).group(1)
         _replace_hash_alg_str = _hash_alg_str.replace(_complex_part, '').replace('\n', '')
