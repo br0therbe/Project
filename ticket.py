@@ -3,9 +3,9 @@
 # @Time        : 2019-09-09 15:42
 # @Version     : Python 3.6.8
 # @Description :
+import copy
 import datetime
 import json
-import logging
 import re
 from base64 import b64decode
 from time import sleep, time
@@ -18,8 +18,9 @@ from data.constants import HEADERS
 from data.setting import USERNAME, PASSWORD
 
 from login_decrypt.fake_decrypt_12306 import DeviceApi
+from utils import LogManager
 
-logger = logging
+logger = LogManager('12306').add_file_handler(10)
 
 
 class Ticket(object):
@@ -28,13 +29,31 @@ class Ticket(object):
         12306 票务
         """
         self._is_query = is_query
+        self.session = requests.session()
+        self.session.headers = HEADERS
+        # _login = Login(USERNAME, PASSWORD)
+        # _is_login = _login.login()
+        # if _is_login is True:
+        #     self.session = _login.session
+
         # self.session = requests.session()
-        # self.session.headers = HEADERS
-        _login = Login(USERNAME, PASSWORD)
-        _is_login = _login.login()
-        if _is_login is True:
-            self.session = _login.session
-        # requests.utils.add_dict_to_cookiejar(self.session.cookies, self._cookie_dict)
+        # cookie_dict = {
+        #     "JSESSIONID": "1664D79B84743E783BAEA26C1EED1C9A",
+        #     "tk": "aTLJ7jP4S6hdDDfvpJxxsC38jz8vW8EXcQCjbw51L1L0",
+        #     "_jc_save_toStation": "%u5F00%u5C01%2CKFF",
+        #     "_jc_save_fromDate": "2019-11-25",
+        #     "_jc_save_toDate": "2019-11-05",
+        #     "_jc_save_wfdc_flag": "dc",
+        #     "_jc_save_fromStation": "%u90D1%u5DDE%2CZZF",
+        #     "RAIL_EXPIRATION": "1576787310474",
+        #     "RAIL_DEVICEID": "O45-FklNK91cfh6Rn5yIwo05w-i2uESjlqT0y-B8nBqw6NXa3GKNHp_3SVq0wFI9CoJ3wFyXsVASA3ZpfpGDZwbzD1GH2nr56-79k1ck8sSzQaMWrTnkvuCJKb4jDR55dE8nrPeAkeUdem4GDx70HR14sWoaNumK",
+        #     "BIGipServerpassport": "971505930.50215.0000",
+        #     "route": "c5c62a339e7744272a54643b3be5bf64",
+        #     "BIGipServerpool_passport": "317522442.50215.0000",
+        #     "BIGipServerotn": "1641611530.24610.0000"
+        # }
+        # requests.utils.add_dict_to_cookiejar(self.session.cookies, cookie_dict)
+
         if self._is_query:
             self.__get_query_ticket_url()
 
@@ -44,7 +63,7 @@ class Ticket(object):
         :return:
         """
         index_url = 'https://kyfw.12306.cn/otn/leftTicket/init?linktypeid=dc'
-        resp_str = self.session.request('get', index_url).text
+        resp_str = self.session.request('get', index_url).content.decode("utf-8")
         self._cleft_ticket_url = re.search(r"CLeftTicketUrl = '([/\w]+)';", resp_str).group(1)
 
     @staticmethod
@@ -71,6 +90,7 @@ class Ticket(object):
         if departure_date is None:
             departure_date = (datetime.datetime.now() + datetime.timedelta(1)).strftime('%Y-%m-%d')
         query_api = f'https://kyfw.12306.cn/otn/{self._cleft_ticket_url}'
+        print(query_api)
         if from_station_name in STATION_DICT and to_station_name in STATION_DICT:
             query_param = {
                 'leftTicketDTO.train_date': departure_date,
@@ -80,7 +100,9 @@ class Ticket(object):
             }
         else:
             raise ValueError('车站名称不正确')
-        resp_dict = self.session.request('get', query_api, query_param).json()
+
+        resp_dict = self.session.request('get', query_api, params=query_param).json()
+        print(json.dumps(resp_dict))
         ticket_dict = {}
         if all(['status' in resp_dict,
                 resp_dict['status'] is True,
@@ -232,7 +254,8 @@ class Ticket(object):
 
         # 第二步, 极其重要
         submit_order_api = 'https://kyfw.12306.cn/otn/confirmPassenger/initDc'
-        submit_order_str = self.session.request('post', submit_order_api, data={'_json_att': ''}).text
+        submit_order_str = self.session.request('post', submit_order_api, data={'_json_att': ''}).content.decode(
+            "utf-8")
         _essential_str = re.search('ticketInfoForPassengerForm=(.*?});', submit_order_str)
         _submit_token_str = re.search(r"globalRepeatSubmitToken = '(\w+)';", submit_order_str)
         if _essential_str and _submit_token_str:
@@ -632,7 +655,7 @@ class Ticket(object):
         :return:
         """
         station_js = 'https://kyfw.12306.cn/otn/resources/js/framework/station_name.js?station_version=1.9109'
-        resp_str = self.session.request('get', station_js).text
+        resp_str = self.session.request('get', station_js).content.decode("utf-8")
         station_list = []
         for station_info in resp_str.replace("var station_names ='@", "").replace("';", "").split("@"):
             short_pinyin, name_cn, name_en, pinyin, _, station_id = station_info.split('|')
@@ -659,7 +682,7 @@ class TicketParse(object):
          location_code, from_station_no, to_station_no, is_support_card, controlled_train_flag,
          gg_num, gr_num, qt_num, rw_num, rz_num, tz_num, wz_num, yb_num, yw_num, yz_num,
          ze_num, zy_num, swz_num, srrb_num, yp_ex, seat_types, exchange_train_flag, houbu_train_flag,
-         houbu_seat_limit) = ticket.split('|')
+         *a, houbu_seat_limit) = ticket.split('|')
         self.secretStr = secretStr  # 加密串
         self.buttonTextInfo = buttonTextInfo  # 备注
         self.train_no = train_no  # 列车号
@@ -712,7 +735,6 @@ class Login(object):
         self.session.headers = HEADERS
         self._username = username
         self._password = password
-        self._index()
 
     @staticmethod
     def _current_time() -> int:
@@ -729,6 +751,15 @@ class Login(object):
         login_url = 'https://kyfw.12306.cn/otn/resources/login.html'
         self._request_index_time = self._current_time()
         _ = self.session.request('get', login_url)
+
+    def _set_device_cookie(self):
+        device_api = DeviceApi().get_device_api()
+        resp_str = self.session.request('get', url=device_api).content.decode("utf-8")
+        logger.debug(f"设备特征接口返回数据：{resp_str}")
+        rail_expiration = re.search('"exp":"(.+?)"', resp_str).group(1)
+        rail_deviceid = re.search('"dfp":"(.+?)"', resp_str).group(1)
+        self.session.cookies.set("RAIL_EXPIRATION", rail_expiration)
+        self.session.cookies.set("RAIL_DEVICEID", rail_deviceid)
 
     def _get_captcha(self, *, image_path: str = None, is_show_image: bool = False) -> str:
         """
@@ -747,7 +778,8 @@ class Login(object):
             '_': self._request_index_time
         }
         captcha_resp = self.session.request('get', captcha_api, params=captcha_params)
-        captcha_resp_dict = json.loads(captcha_resp.text.replace('/**/callback(', '').replace(');', ''))
+        captcha_resp_dict = json.loads(
+            captcha_resp.content.decode("utf-8").replace('/**/callback(', '').replace(');', ''))
         img_bytes = b64decode(captcha_resp_dict['image'])
         # img_byte_array = bytearray(img_bytes)
         # if is_show_image:
@@ -756,7 +788,7 @@ class Login(object):
         #     cv2.imshow('image_show', image)
         #     cv2.waitKey(15000)
 
-        # 写入验证码 md5({username}{password}).png
+        # 写入验证码
         if image_path:
             with open(image_path, 'wb') as fw:
                 fw.write(img_bytes)
@@ -772,7 +804,7 @@ class Login(object):
 
         # 验证码点击的位置
         answer = ','.join([IMAGE_LOCATION_DICT[str(index)] for index in index_list])
-        print(answer)
+        logger.info(f"验证码位置：{answer}")
 
         captcha_check_params = {
             'callback': 'callback',
@@ -783,9 +815,10 @@ class Login(object):
         }
 
         # 查看是否验证成功
-        resp_str = self.session.request('get', captcha_check_api, params=captcha_check_params).text
+        resp_str = self.session.request('get', captcha_check_api, params=captcha_check_params).content.decode("utf-8")
+        # {"result_message":"验证码校验失败,信息为空","result_code":"8"}
         resp_dict = json.loads(resp_str.replace('/**/callback({', '{').replace('});', '}'))
-        print(resp_dict)
+        logger.debug(f"验证码校验接口返回数据：{resp_dict}")
         return resp_dict
 
     def _login(self) -> dict:
@@ -799,36 +832,34 @@ class Login(object):
             'password': self._password,
             'appid': 'otn'
         }
+        # {'result_message': '密码输入错误。如果输错次数超过4次，用户将被锁定。', 'result_code': 1}
         resp_dict = self.session.request('post', login_api, data=login_data).json()
-        print(resp_dict)
+        logger.debug(f"请求登录接口返回数据：{resp_dict}")
         return resp_dict
 
     def _check_login_first(self) -> dict:
         uamtk_api = 'https://kyfw.12306.cn/passport/web/auth/uamtk'
-        resp_dict = self.session.request('post', uamtk_api, data={'appid': 'otn'}).json()
-        print(resp_dict)
+        headers = copy.deepcopy(HEADERS)
+        headers['Referer'] = 'https://kyfw.12306.cn/otn/passport?redirect=/otn/login/userLogin'
+        # {'result_message': '用户未登录', 'result_code': 1}
+        resp_dict = self.session.request('post', uamtk_api, headers=headers, data={'appid': 'otn'}).json()
+        logger.info(f"第一次检查登录接口返回数据：{resp_dict}")
         return resp_dict
 
     def _check_login_second(self, tk: str) -> dict:
         uamauthclient_api = 'https://kyfw.12306.cn/otn/uamauthclient'
         resp_dict = self.session.request('post', uamauthclient_api, data={'tk': tk}).json()
-        print(resp_dict)
+        logger.info(f"第二次检查登录接口返回数据：{resp_dict}")
         return resp_dict
-
-    def __set_device_cookie(self):
-        device_api = DeviceApi().get_device_api()
-        resp_str = self.session.request('get', url=device_api).text
-        rail_expiration = re.search('"exp":"(.+?)"', resp_str).group(1)
-        rail_deviceid = re.search('"dfp":"(.+?)"', resp_str).group(1)
-        self.session.cookies.set("RAIL_EXPIRATION", rail_expiration)
-        self.session.cookies.set("RAIL_DEVICEID", rail_deviceid)
 
     def login(self):
         """
         12306 登录
         :return:
         """
-        self.__set_device_cookie()
+
+        self._index()
+        self._set_device_cookie()
 
         # 获取验证码
         img_path = f'{self._username}.png'
@@ -840,25 +871,19 @@ class Login(object):
         result_message = msg.get('result_message')
         result_code = msg.get('result_code')
         if result_code != '4' or result_message != '验证码校验成功':
-            return {
-                'code': 503,
-                'data': result_message,
-                'message': 'Failure'
-            }
+            return False
 
         # 登录
-        _ = self._login()
+        _login_dict = self._login()
+        if _login_dict.get('result_code') is not 0 or _login_dict.get('result_message') != '登录成功':
+            return False
 
         # 第一次检查登录状态
         msg = self._check_login_first()
         result_message = msg.get('result_message')
         result_code = msg.get('result_code')
         if result_code != 0 or result_message != '验证通过':
-            return {
-                'code': 503,
-                'data': result_message,
-                'message': 'Failure'
-            }
+            return False
 
         # 第二次检查登录状态
         tk = msg.get('newapptk')
@@ -866,13 +891,9 @@ class Login(object):
         result_message = msg.get('result_message')
         result_code = msg.get('result_code')
         if result_code != 0 or result_message != '验证通过':
-            return {
-                'code': 503,
-                'data': result_message,
-                'message': 'Failure'
-            }
+            return False
 
-        print(self.session.cookies)
+        logger.info(f"登录后的cookie：{requests.utils.dict_from_cookiejar(self.session.cookies)}")
         return True
 
 
@@ -1229,22 +1250,28 @@ class ValidateParams(AddPassengerParams):
 
 class Test12306(object):
     def test_login(self):
-        r = Login(USERNAME, PASSWORD).login()
-        print(json.dumps(r, indent=4, ensure_ascii=False))
+        result = Login(USERNAME, PASSWORD).login()
+        print(json.dumps(result, indent=4, ensure_ascii=False))
 
     def test_book(self):
-        r = Ticket().book(passenger_name_list=['李金全'])
-        print(json.dumps(r, indent=4, ensure_ascii=False))
+        result = Ticket().book(passenger_name_list=['LJQ'])
+        print(json.dumps(result, indent=4, ensure_ascii=False))
 
     def test_refund(self):
-        r = Ticket().refund('EK70838387', '李金全')
-        print(json.dumps(r, indent=4, ensure_ascii=False))
+        result = Ticket().refund('Exxxxx', 'LJQ')
+        print(json.dumps(result, indent=4, ensure_ascii=False))
 
     def test_cancel(self):
-        r = Ticket().cancel('EK70838387')
-        print(json.dumps(r, indent=4, ensure_ascii=False))
+        result = Ticket().cancel('Exxxxx')
+        print(json.dumps(result, indent=4, ensure_ascii=False))
 
 
 if __name__ == '__main__':
-    t = Test12306()
-    t.test_login()
+    # t = Test12306()
+    # t.test_login()
+    # t = Ticket()
+    # r = t.query_ticket('2020-02-01')
+    # print(json.dumps(r))
+    # print(r.__len__())
+    r = Login(USERNAME, PASSWORD).login()
+    print(r)
