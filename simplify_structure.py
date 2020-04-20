@@ -10,13 +10,15 @@ ContainerSequence.register(list)
 ContainerSequence.register(tuple)
 
 
-def simplify_structure(data: object, structure: dict) -> object:
+def simplify_structure(data: object, structure: dict = None) -> object:
     """
     简化对象结构，适用于对象特别大，不容易清晰看出对象结构的情况。
     :param data: 对象
     :param structure: 储存对象结构的字典
     :return: 简化后的对象
     """
+    if structure is None:
+        structure = {}
     if isinstance(data, ContainerSequence):
         # 容器序列类型对象
         is_sequence = True
@@ -41,4 +43,3 @@ def simplify_structure(data: object, structure: dict) -> object:
     else:
         # 非字典类型，返回其值
         return data
-
