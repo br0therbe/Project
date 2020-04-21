@@ -131,5 +131,42 @@ class KeepSession(LoggerMixin):
 #         print('{} is {}'.format(file, text))
 #         # return file, text
 
+class FunctionResultCache(object):
+    cache_dict = {}
+    __lock = threading.Lock()
+
+    @classmethod
+    def some_time(cls, cache_time: float):
+
+        def _some_time(func):
+            @wraps(func)
+            def __some_time(*args, **kwargs):
+                key = cls._make_key(func, args, kwargs)
+                if key in cls.cache_dict and time.time() - cls.cache_dict[key][1] < cache_time:
+                    return cls.cache_dict[key][0]
+                else:
+                    with cls.__lock:
+                        if key in cls.cache_dict and time.time() - cls.cache_dict[key][1] < cache_time:
+                            return cls.cache_dict[key][0]
+                        else:
+                            result = func(*args, **kwargs)
+                            cls.cache_dict[key] = result, time.time()
+                            return result
+
+            return __some_time
+
+        return _some_time
+
+    @staticmethod
+    def _make_key(func, args: tuple, kwargs: dict) -> int:
+        key = (func,) + args
+        defaults = func.__kwdefaults__
+        if defaults:
+            kwargs = {**defaults, **kwargs}
+
+        for item in sorted(kwargs.items(), key=lambda x: x[0]):
+            key += item
+        return hash(key)
+
 if __name__ == '__main__':
     pass
