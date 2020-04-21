@@ -168,5 +168,44 @@ class FunctionResultCache(object):
             key += item
         return hash(key)
 
+    
+    
+    
+headers = {"Content-Type": "application/json; charset=utf-8"}
+at = ['phone']
+
+def dingtalk(*, title: str, message: str, image_url: str = None):
+    """
+    钉钉通知重要消息
+    :param title: 标题
+    :param message: 消息体
+    :param image_url: 图片链接
+    :return:
+    """
+    timestamp = int(time.time() * 1000)
+    str_to_sign = f'{timestamp}\n{secret}'
+    sign = quote(b64encode(hmac.new(secret.encode('utf-8'), str_to_sign.encode('utf-8'), digestmod=sha256).digest()))
+    api = f'https://oapi.dingtalk.com/robot/send?access_token={access_token}&timestamp={timestamp}&sign={sign}'
+    message = message.strip().replace('\n', '\n> ##### ')
+    real_title = f'{title}'
+    if image_url is not None:
+        message += f'\n> ![screenshot]({image_url})'
+    markdown_data = {
+        "msgtype": "markdown",
+        "markdown": {
+            "title": real_title,
+            "text": f"## {real_title} @{'@'.join(at)}\n> ##### {message}\n"
+        },
+        "at": {
+            "atMobiles": at,
+            "isAtAll": False
+        }
+    }
+    try:
+        resp_str = requests.request(method='post', url=api, json=markdown_data, headers=headers).text
+        logger.info(f'钉钉发送成功：{resp_str}')
+    except Exception as e:
+        logger.exception(f'钉钉发送失败，原因：{e}')
+
 if __name__ == '__main__':
     pass
