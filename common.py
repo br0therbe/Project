@@ -207,5 +207,19 @@ def dingtalk(*, title: str, message: str, image_url: str = None):
     except Exception as e:
         logger.exception(f'钉钉发送失败，原因：{e}')
 
+def cached_method_result(func):
+    @wraps(func)
+    def inner(self):
+        if not hasattr(func, 'result'):
+            result = func(self)
+            func.result = result
+            func_name = func.__name__
+            setattr(self.__class__, func_name, result)
+            setattr(self, func_name, result)
+        return func.result
+
+    return inner        
+        
+        
 if __name__ == '__main__':
     pass
